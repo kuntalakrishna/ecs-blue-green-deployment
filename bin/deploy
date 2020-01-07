@@ -1,23 +1,31 @@
 #!/bin/bash
 
-set -o errexit -o xtrace
-echo -n "Enter S3 Bucket to host the templates and scripts > "
-read bucket
-echo -n "Enter stackname to create or update the stack > "
-read stackname
-echo -n "Enter GitHub User > "
-read GitHubUser
-echo -n "Enter GitHubToken > "
-read GitHubToken
+# set -o errexit -o xtrace
+# echo -n "Enter S3 Bucket to host the templates and scripts > "
+# read bucket
+# echo -n "Enter stackname to create or update the stack > "
+# read stackname
+# echo -n "Enter GitHub User > "
+# read GitHubUser
+# echo -n "Enter GitHubToken > "
+# read GitHubToken
+# echo -n "Enter AWS Profile Name > "
+# read aws_profile
 
-zip deploy/templates.zip ecs-blue-green-deployment.yaml templates/*
-cd scripts && zip scripts.zip * && cd ..
+bucket="ecs-blue-green-deployment-fc"
+stackname="ecs-blue-green-deployment-test-stack"
+GitHubUser="kuntalakrishna"
+GitHubToken="dbc8566ed2a4d73d22968b53584d783730f257d9"
+aws_profile="future-creations-admin"
+
+7z a deploy/templates.zip ecs-blue-green-deployment.yaml templates/*
+cd scripts && 7z a scripts.zip * && cd ..
 mv scripts/scripts.zip deploy/scripts.zip
 
-aws s3 cp deploy/templates.zip "s3://${bucket}" --acl public-read
-aws s3 cp deploy/scripts.zip "s3://${bucket}" --acl public-read
-aws s3 cp ecs-blue-green-deployment.yaml "s3://${bucket}" --acl public-read
-aws s3 cp --recursive templates/ "s3://${bucket}/templates" --acl public-read
-aws s3 cp --recursive scripts/ "s3://${bucket}/scripts" --acl public-read
-aws s3api put-bucket-versioning --bucket "${bucket}" --versioning-configuration Status=Enabled
-aws cloudformation deploy --stack-name $stackname --template-file ecs-blue-green-deployment.yaml --capabilities CAPABILITY_NAMED_IAM --parameter-overrides GitHubUser=$GitHubUser GitHubToken=$GitHubToken TemplateBucket=$bucket
+aws s3 cp deploy/templates.zip "s3://${bucket}" --acl public-read --profile $aws_profile
+aws s3 cp deploy/scripts.zip "s3://${bucket}" --acl public-read --profile $aws_profile
+aws s3 cp ecs-blue-green-deployment.yaml "s3://${bucket}" --acl public-read --profile $aws_profile
+aws s3 cp --recursive templates/ "s3://${bucket}/templates" --acl public-read --profile $aws_profile
+aws s3 cp --recursive scripts/ "s3://${bucket}/scripts" --acl public-read --profile $aws_profile
+aws s3api put-bucket-versioning --bucket "${bucket}" --versioning-configuration Status=Enabled --profile $aws_profile
+aws cloudformation deploy --stack-name $stackname --template-file ecs-blue-green-deployment.yaml --capabilities CAPABILITY_NAMED_IAM --parameter-overrides GitHubUser=$GitHubUser GitHubToken=$GitHubToken TemplateBucket=$bucket --profile $aws_profile
